@@ -22,14 +22,8 @@ variable "cloudflare_zone_id" {
   sensitive   = true
 }
 
-variable "cloudflare_domain_0001-id" {
-  description = "Cloudflare Domain URL for domain_0001"
-  type        = string
-  sensitive   = true
-}
-
-variable "cloudflare_domain_0001-ip" {
-  description = "Cloudflare Domain IP address for domain_0001"
+variable "cloudflare_erp_id" {
+  description = "Cloudflare ERP Domain URL"
   type        = string
   sensitive   = true
 }
@@ -39,7 +33,3 @@ variable "linode_token" {
   type        = string
   sensitive   = true
 }
-
-# apache-ofbiz
-
-# postgresql

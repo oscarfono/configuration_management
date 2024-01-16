@@ -13,7 +13,16 @@ resource "linode_instance" "erp" {
   booted          = true
 }
 
-resource "local_file" "ansible_inventory" {
-  content  = tolist(toset(linode_instance.erp.ipv4))[0]
-  filename = "ansible_inventory.tpl"
+locals {
+  linode_erp_ip_content = tolist(toset(linode_instance.erp.ipv4))[0]
+}
+
+resource "cloudflare_record" "erp" {
+  zone_id         = var.cloudflare_zone_id
+  name            = "erp"
+  value           = local.linode_erp_ip_content
+  type            = "A"
+  ttl             = 3600
+  allow_overwrite = true
+  proxied         = false
 }
