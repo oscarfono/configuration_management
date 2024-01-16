@@ -7,18 +7,18 @@
 
 - name: Create configuration and resources directory
   ansible.builtin.file:
-    path: "{{ erpnext.path }}/gitops"
+    path: "/opt/gitops"
     state: directory
 
 - name: Install Traefik
   ansible.builtin.template:
     src: templates/traefik.env.j2
-    dest: "{{ erpnext.path }}/gitops/traefik.env"
+    dest: "/opt/gitops/traefik.env"
 
 - name: Deploy Traefik container
   ansible.builtin.command: >
     docker-compose --project-name traefik
-    --env-file {{ erpnext.path }}/gitops/traefik.env
+    --env-file /opt/gitops/traefik.env
     -f  {{ erpnext.path }}/overrides/compose.traefik.yaml
     -f  {{ erpnext.path }}/overrides/compose.traefik-ssl.yaml
     up -d
@@ -28,12 +28,12 @@
 - name: Install MariaDB
   ansible.builtin.template:
     src: templates/mariadb.env.j2
-    dest: "{{ erpnext.path }}/gitops/mariadb.env"
+    dest: "/opt/gitops/mariadb.env"
 
 - name: Deploy MariaDB container
   ansible.builtin.command: >
     docker-compose --project-name mariadb
-    --env-file {{ erpnext.path }}/gitops/mariadb.env
+    --env-file /opt/gitops/mariadb.env
     -f {{ erpnext.path }}/overrides/compose.mariadb-shared.yaml
     up -d
   args:
@@ -42,17 +42,17 @@
 - name: Create ERPNext project (bench) - erpnext-one
   ansible.builtin.template:
         src: templates/erpnext-one.env.j2
-        dest: "{{ erpnext.path }}/gitops/erpnext-one.env"
+        dest: "/opt/gitops/erpnext-one.env"
 
 - name: Generate ERPNext-one YAML
   ansible.builtin.template:
     src: templates/erpnext-one.yaml.j2
-    dest: "{{ erpnext.path }}/gitops/erpnext-one.yaml"
+    dest: "/opt/gitops/erpnext-one.yaml"
 
 - name: Deploy ERPNext-one containers
   ansible.builtin.command: >
     docker-compose --project-name erpnext-one
-    -f {{ erpnext.path }}/gitops/erpnext-one.yaml
+    -f /opt/gitops/erpnext-one.yaml
     up -d
   args:
     chdir:  "{{ erpnext.path }}"
