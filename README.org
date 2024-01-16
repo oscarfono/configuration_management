@@ -1,4 +1,4 @@
-#+TITLE: Systems and Configuration Management Shared Repository
+#+TITLE: My Configuration Management
 #+AUTHOR: Cooper Oscarfono
 #+EMAIL:  cooper@oscarfono.com
 
