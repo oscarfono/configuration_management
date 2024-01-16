@@ -1,0 +1,69 @@
+---
+
+- name: Clone frappe_docker repo
+  ansible.builtin.git:
+    repo: https://github.com/frappe/frappe_docker
+    dest:  "{{ erpnext.path }}"
+
+- name: Create configuration and resources directory
+  ansible.builtin.file:
+    path: "{{ erpnext.path }}/gitops"
+    state: directory
+
+- name: Install Traefik
+  ansible.builtin.template:
+    src: templates/traefik.env.j2
+    dest: "{{ erpnext.path }}/gitops/traefik.env"
+
+- name: Deploy Traefik container
+  ansible.builtin.command: >
+    docker-compose --project-name traefik
+    --env-file {{ erpnext.path }}/gitops/traefik.env
+    -f  {{ erpnext.path }}/overrides/compose.traefik.yaml
+    -f  {{ erpnext.path }}/overrides/compose.traefik-ssl.yaml
+    up -d
+  args:
+    chdir: "{{ erpnext.path }}"
+
+- name: Install MariaDB
+  ansible.builtin.template:
+    src: templates/mariadb.env.j2
+    dest: "{{ erpnext.path }}/gitops/mariadb.env"
+
+- name: Deploy MariaDB container
+  ansible.builtin.command: >
+    docker-compose --project-name mariadb
+    --env-file {{ erpnext.path }}/gitops/mariadb.env
+    -f {{ erpnext.path }}/overrides/compose.mariadb-shared.yaml
+    up -d
+  args:
+    chdir:  "{{ erpnext.path }}"
+
+- name: Create ERPNext project (bench) - erpnext-one
+  ansible.builtin.template:
+        src: templates/erpnext-one.env.j2
+        dest: "{{ erpnext.path }}/gitops/erpnext-one.env"
+
+- name: Generate ERPNext-one YAML
+  ansible.builtin.template:
+    src: templates/erpnext-one.yaml.j2
+    dest: "{{ erpnext.path }}/gitops/erpnext-one.yaml"
+
+- name: Deploy ERPNext-one containers
+  ansible.builtin.command: >
+    docker-compose --project-name erpnext-one
+    -f {{ erpnext.path }}/gitops/erpnext-one.yaml
+    up -d
+  args:
+    chdir:  "{{ erpnext.path }}"
+
+- name: Create sites for ERPNext-one
+  ansible.builtin.command: >
+    docker-compose --project-name erpnext-one exec backend \
+    bench new-site --no-mariadb-socket --mariadb-root-password {{ mysql.root_pass }} \
+    --install-app erpnext --admin-password {{ erpnext.admin_pass }} {{ item }}
+  with_items:
+    - "{{ erpnext.sites.one }}"
+    - "{{ erpnext.sites.two }}"
+  args:
+    chdir:  "{{ erpnext.path }}"

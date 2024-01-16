@@ -1,0 +1,85 @@
+#+TITLE: Systems and Configuration Management Shared Repository
+#+AUTHOR: Cooper Oscarfono
+#+EMAIL:  cooper@oscarfono.com
+
+Contained within this repository are various scripts, playbooks, roles, and configs for services I run at home and work.  Maybe you find them useful also.  It is a work in progress as I return to the field and familiarize myself with the technologies and best practices of today.  The tools I currently and primarily use for configuration management are [[https://terraform.io][Terraform]], [[https://ansible.com][Ansible]], [[https://docker.com][Docker]], and [[https://www.gnu.org/software/bash/][GNU BASH]], and that is what you will find here.
+
+For privacy and security reasons I have omitted several files that you will need to generate in addition to cloning this repo:
+
+/*NB: Omitting the "examples" directory from the specified path for each of these example files will give you the correct path location for each.*/
+
+* Terraform Credentials
+Not an entirely secure way of doing things but I haven't really delved too far into this aspect of Terraform just yet. Create the file *credentials.auto.tfvars* and replace the values with your own. Be sure this file is included within your *.gitignore* file before pushing to a git repository.
+
+#+begin_src bash tangle: configuration_management/examples/terraform/credentials.auto.tfvars
+
+cloudflare_token_secret   = "someSecretTokenGeneratedByCloudFlare"
+cloudflare_zone_id        = "theZoneIdForThisDomainWithinMyCloudFlareAccount"
+cloudflare_domain_0001-id = "theDomainUrlBelongingToTheZoneId"
+cloudflare_domain_0001-ip = "theIPAddressForThisDomain"
+
+linode_token = "someSecretTokenGeneratedByMyHostLinode"
+pub_ssh_key  = "~/.ssh/id_ed25519.pub"
+
+#+end_src
+
+* Ansible Hosts File
+#+begin_src ini tangle: configuration_management/examples/ansible/inventory/hosts.ini
+
+[erp]
+erp.example.com
+
+[www]
+www.example.com
+
+#+end_src
+
+* Ansible Vault Encrypted Vars
+I use [[https://docs.ansible.com/ansible/latest/cli/ansible-vault.html][Ansible-Vault]] to encrypt sensitive variables used within my configurations.  If you've already cloned this repo you will have a *group_vars* directory under the *ansible* directory.  Within the *group_vars* directory create the following tree, where /$host/ is the name of the group for which the vars files apply :
+
+*group_vars*
+   |
+   ---/$host/
+        |
+        --- *vars*
+        |
+        --- *vault*
+
+Once you have done this and populated the values for your variables, you can simply encrypt your *vault* file with the following command:
+
+#+begin_src bash
+
+ansible-vault encrypt configuration-management/ansible/group_vars/erphost/vault
+
+#+end_src
+
+You will be prompted for a password which you can store in a password manager such as [[https://keepassxc.org/download/#linux][KeePassXC]].
+
+#+begin_src yaml :tangle configuration_management/examples/ansible/group_vars/erp_host/vault
+
+vault_ansible:
+  host: replaceWithTheIPAddressOfYourHost
+  user: root
+  become_pass: someSuperSecretRootPassword
+  ssh_private_key_file: /home/$USER/.ssh/id_ed25519
+vault_erpnext:
+  admin_pass: supersecretadminpass
+  domain: erp.example.com
+  sites:
+    one: one.erp.example.com
+    two: two.erp.example.com
+    three: three.erp.example.com
+    four: four.erp.example.com
+vault_mysql:
+  database: erpnext
+  port: 3306
+  root_user: root
+  root_pass: supersecretrootpass
+  user: erpnext
+  user_pass: supersecretuserpass
+vault_traefik:
+  domain: traefik.example.com
+  email: acme@example.com
+  password: "$apr1$RS0PWVu.$CeOlrOUtjRBvOiVFb.nhE0"
+
+#+end_src

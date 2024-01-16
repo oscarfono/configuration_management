@@ -1,0 +1,13 @@
+---
+
+- name: Building a new ERPNext instance for the Oscarfono Group.
+  hosts: erp
+  become: yes
+  vars_files:
+    - ../group_vars/erp_host/vars
+    - ../group_vars/erp_host/vault
+
+  roles:
+    - { role: admin }
+    - { role: docker }
+    - { role: erpnext }

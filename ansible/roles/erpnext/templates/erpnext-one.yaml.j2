@@ -1,0 +1,151 @@
+version: '3'
+networks:
+  bench-network:
+    external: false
+    name: erpnext-one
+  mariadb-network:
+    external: true
+    name: mariadb-network
+  traefik-public:
+    external: true
+    name: traefik-public
+services:
+  backend:
+    depends_on:
+      configurator:
+        condition: service_completed_successfully
+    image: frappe/erpnext:v15.10.1
+    networks:
+      bench-network: {}
+      mariadb-network: {}
+    volumes:
+    - sites:/home/frappe/frappe-bench/sites:rw
+  configurator:
+    command:
+    - 'ls -1 apps > sites/apps.txt; bench set-config -g db_host $$DB_HOST; bench set-config
+      -gp db_port $$DB_PORT; bench set-config -g redis_cache "redis://$$REDIS_CACHE";
+      bench set-config -g redis_queue "redis://$$REDIS_QUEUE"; bench set-config -g
+      redis_socketio "redis://$$REDIS_QUEUE"; bench set-config -gp socketio_port $$SOCKETIO_PORT;
+
+      '
+    depends_on:
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
+    entrypoint:
+    - bash
+    - -c
+    environment:
+      DB_HOST: erpnext
+      DB_PORT: '3306'
+      REDIS_CACHE: redis-cache:6379
+      REDIS_QUEUE: redis-queue:6379
+      SOCKETIO_PORT: 9000
+    image: frappe/erpnext:v15.10.1
+    networks:
+      bench-network: {}
+      mariadb-network: {}
+    volumes:
+    - sites:/home/frappe/frappe-bench/sites:rw
+  frontend:
+    command:
+    - nginx-entrypoint.sh
+    depends_on:
+      backend:
+        condition: service_started
+      websocket:
+        condition: service_started
+    environment:
+      BACKEND: backend:8000
+      CLIENT_MAX_BODY_SIZE: 50m
+      FRAPPE_SITE_NAME_HEADER: $$$$host
+      PROXY_READ_TIMOUT: '120'
+      SOCKETIO: websocket:9000
+      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: "off"
+    image: frappe/erpnext:v15.10.1
+    labels:
+      traefik.docker.network: traefik-public
+      traefik.enable: "true"
+      traefik.http.routers.erpnext-one-http.entrypoints: http
+      traefik.http.routers.erpnext-one-http.middlewares: https-redirect
+      traefik.http.routers.erpnext-one-http.rule: Host(`one.oscarfono.com`,`two.oscarfono.com`)
+      traefik.http.routers.erpnext-one-http.service: erpnext-one
+      traefik.http.routers.erpnext-one-https.entrypoints: https
+      traefik.http.routers.erpnext-one-https.rule: Host(`one.oscarfono.com`,`two.oscarfono.com`)
+      traefik.http.routers.erpnext-one-https.service: erpnext-one
+      traefik.http.routers.erpnext-one-https.tls: "true"
+      traefik.http.routers.erpnext-one-https.tls.certresolver: le
+      traefik.http.services.erpnext-one.loadbalancer.server.port: '8080'
+    networks:
+      bench-network: {}
+      traefik-public: {}
+    volumes:
+    - sites:/home/frappe/frappe-bench/sites:rw
+  queue-long:
+    command: bench worker --queue long,default,short
+    depends_on:
+      configurator:
+        condition: service_completed_successfully
+    image: frappe/erpnext:v15.10.1
+    networks:
+      bench-network: {}
+      mariadb-network: {}
+    volumes:
+    - sites:/home/frappe/frappe-bench/sites:rw
+  queue-short:
+    command: bench worker --queue short,default
+    depends_on:
+      configurator:
+        condition: service_completed_successfully
+    image: frappe/erpnext:v15.10.1
+    networks:
+      bench-network: {}
+      mariadb-network: {}
+    volumes:
+    - sites:/home/frappe/frappe-bench/sites:rw
+  redis-cache:
+    image: redis:6.2-alpine
+    networks:
+      bench-network: {}
+      mariadb-network: {}
+    volumes:
+    - redis-cache-data:/data:rw
+  redis-queue:
+    image: redis:6.2-alpine
+    networks:
+      bench-network: {}
+      mariadb-network: {}
+    volumes:
+    - redis-queue-data:/data:rw
+  scheduler:
+    command: bench schedule
+    depends_on:
+      configurator:
+        condition: service_completed_successfully
+    image: frappe/erpnext:v15.10.1
+    networks:
+      bench-network: {}
+      mariadb-network: {}
+    volumes:
+    - sites:/home/frappe/frappe-bench/sites:rw
+  websocket:
+    command:
+    - node
+    - /home/frappe/frappe-bench/apps/frappe/socketio.js
+    depends_on:
+      configurator:
+        condition: service_completed_successfully
+    image: frappe/erpnext:v15.10.1
+    networks:
+      bench-network: {}
+      mariadb-network: {}
+    volumes:
+    - sites:/home/frappe/frappe-bench/sites:rw
+version: '3.9'
+volumes:
+  redis-cache-data: {}
+  redis-queue-data: {}
+  sites: {}

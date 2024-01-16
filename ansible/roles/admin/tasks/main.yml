@@ -1,0 +1,14 @@
+---
+
+- name: Set hashed password
+  ansible.builtin.set_fact:
+    hashed_password: "$6$aw3s0m3Sauc3AndS$oKrkX24JJ/A6MVPtN1Yhg6eLpJuJpIxdms.B5v9rA03mS6MqDpMZ1SwIxde31tOXtFH/SPel81hLIoAPBLt1b0"
+
+- name: Add admin user to host
+  ansible.builtin.user:
+    name: sod
+    password: "{{ hashed_password }}"
+    ssh_key_file: "{{ ansible_ssh_private_key_file }}"
+    shell: /bin/bash
+    groups: sudo
+    append: yes

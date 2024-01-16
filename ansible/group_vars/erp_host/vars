@@ -1,0 +1,40 @@
+ansible_become_pass: "{{ vault_ansible.become_pass }}"
+ansible_connection: ssh
+ansible_host: "{{ vault_ansible.host }}"
+ansible_ssh_private_key_file: "{{ vault_ansible.ssh_private_key_file }}"
+ansible_user: "{{ vault_ansible.user }}"
+
+docker:
+  image:
+    erpnext: frappe/erpnext:latest
+    mariadb: mariadb:latest
+    redis: redis:latest
+    traefik: traefik:v3.0
+  network:
+    backend: backend
+    frontend: proxy
+  sock_path: "/var/run/docker.sock"
+
+erpnext:
+  admin_pass: "{{ vault_erpnext.admin_pass }}"
+  domain: "{{ vault_erpnext.domain }}"
+  path: "/opt/frappe_docker"
+  sites:
+    one: "{{ vault_erpnext.sites.one }}"
+    two: "{{ vault_erpnext.sites.two }}"
+    three: "{{ vault_erpnext.sites.three }}"
+    four: "{{ vault_erpnext.sites.four }}"
+  version: v15.10.1
+
+mysql:
+  database: "{{ vault_mysql.database }}"
+  port: "{{ vault_mysql.port }}"
+  root_user: "{{ vault_mysql.root_user }}"
+  root_pass: "{{ vault_mysql.root_pass }}"
+  user: "{{ vault_mysql.user }}"
+  user_pass: "{{ vault_mysql.user_pass }}"
+
+traefik:
+  domain: "{{ vault_traefik.domain }}"
+  email: "{{ vault_traefik.email }}"
+  password: "{{ vault_traefik.password }}" # echo 'HASHED_PASSWORD='$(openssl passwd -apr1 supersecrettraefikpass)
