@@ -6,11 +6,12 @@ Contained within this repository are various scripts, playbooks, roles, and conf
 
 For privacy and security reasons I have omitted several files that you will need to generate in addition to cloning this repo:
 
-/*NB: Omitting the "examples" directory from the specified path for each of these example files will give you the correct path location for each.*/
+/*NB: Emacs users may simply tangle these source blocks direct from this org file after removing the "examples" directory from the specified :tangle path first*/
 
 * Terraform Credentials
 Not an entirely secure way of doing things but I haven't really delved too far into this aspect of Terraform just yet. Create the file *credentials.auto.tfvars* and replace the values with your own. Be sure this file is included within your *.gitignore* file before pushing to a git repository.
 
+*configuration_management/terraform/credentials.auto.tfvars*
 #+begin_src bash tangle: configuration_management/examples/terraform/credentials.auto.tfvars
 
 cloudflare_token_secret   = "someSecretTokenGeneratedByCloudFlare"
@@ -24,6 +25,8 @@ pub_ssh_key  = "~/.ssh/id_ed25519.pub"
 #+end_src
 
 * Ansible Hosts File
+
+*configuration_management/ansible/inventory/hosts.ini*
 #+begin_src ini tangle: configuration_management/examples/ansible/inventory/hosts.ini
 
 [erp]
@@ -37,6 +40,8 @@ www.example.com
 * Ansible Vault Encrypted Vars
 I use [[https://docs.ansible.com/ansible/latest/cli/ansible-vault.html][Ansible-Vault]] to encrypt sensitive variables used within my configurations.  If you've already cloned this repo you will have a *group_vars* directory under the *ansible* directory.  Within the *group_vars* directory create the following tree, where /$host/ is the name of the group for which the vars files apply :
 
+#+begin_src
+
 *group_vars*
    |
    ---/$host/
@@ -44,6 +49,8 @@ I use [[https://docs.ansible.com/ansible/latest/cli/ansible-vault.html][Ansible-
         --- *vars*
         |
         --- *vault*
+
+#+end_src
 
 Once you have done this and populated the values for your variables, you can simply encrypt your *vault* file with the following command:
 
@@ -55,6 +62,8 @@ ansible-vault encrypt configuration-management/ansible/group_vars/erphost/vault
 
 You will be prompted for a password which you can store in a password manager such as [[https://keepassxc.org/download/#linux][KeePassXC]].
 
+
+*configuration_management/ansible/group_vars/erp_host/vault*
 #+begin_src yaml :tangle configuration_management/examples/ansible/group_vars/erp_host/vault
 
 vault_ansible:
